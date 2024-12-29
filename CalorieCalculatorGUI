@@ -1,0 +1,150 @@
+package client;
+
+import comon.CalorieCalculator;
+import javax.swing.*;
+import java.awt.*;
+import java.rmi.registry.LocateRegistry;
+import java.rmi.registry.Registry;
+
+public class CalorieCalculatorGUI extends JFrame {
+    private JTextField weightField, heightField, ageField;
+    private JComboBox<String> genderCombo;
+    private JLabel resultLabel;
+    private CalorieCalculator calculator;
+
+    public CalorieCalculatorGUI() {
+        try {
+            Registry registry;
+            registry = LocateRegistry.getRegistry("192.168.43.19");
+            calculator = (CalorieCalculator) registry.lookup("CalorieCalculator");
+        } catch (Exception e) {
+            System.err.println("Client exception: " + e.toString());
+            e.printStackTrace();
+        }
+
+        setupGUI();
+    }
+
+    private void setupGUI() {
+        setTitle("Kalkulator Kalori Harian");
+        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        setLayout(new BorderLayout());
+        setResizable(false);
+
+        // Main panel with gradient background
+        JPanel mainPanel = new JPanel() {
+            @Override
+            protected void paintComponent(Graphics g) {
+                super.paintComponent(g);
+                Graphics2D g2d = (Graphics2D) g;
+                g2d.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
+                int w = getWidth();
+                int h = getHeight();
+                Color color1 = new Color(219, 112, 147); 
+                Color color2 = new Color(240, 128, 128);
+                GradientPaint gp = new GradientPaint(0, 0, color1, 0, h, color2);
+                g2d.setPaint(gp);
+                g2d.fillRect(0, 0, w, h);
+            }
+        };
+        mainPanel.setLayout(new BoxLayout(mainPanel, BoxLayout.Y_AXIS));
+        mainPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+
+        // Title
+        JLabel titleLabel = new JLabel("Kalkulator Kalori Harian");
+        titleLabel.setFont(new Font("Arial", Font.BOLD, 24));
+        titleLabel.setForeground(Color.WHITE);
+        titleLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+        mainPanel.add(titleLabel);
+        mainPanel.add(Box.createRigidArea(new Dimension(0, 20)));
+
+        // Input panel
+        JPanel inputPanel = new JPanel();
+        inputPanel.setLayout(new GridLayout(4, 2, 10, 10));
+        inputPanel.setOpaque(false);
+
+        // Weight input
+        inputPanel.add(createLabel("Berat Badan (kg):"));
+        weightField = createTextField();
+        inputPanel.add(weightField);
+
+        // Height input
+        inputPanel.add(createLabel("Tinggi Badan (cm):"));
+        heightField = createTextField();
+        inputPanel.add(heightField);
+
+        // Age input
+        inputPanel.add(createLabel("Umur:"));
+        ageField = createTextField();
+        inputPanel.add(ageField);
+
+        // Gender input
+        inputPanel.add(createLabel("Jenis Kelamin:"));
+        genderCombo = new JComboBox<>(new String[]{"Laki-laki", "Perempuan"});
+        genderCombo.setFont(new Font("Arial", Font.PLAIN, 14));
+        inputPanel.add(genderCombo);
+
+        mainPanel.add(inputPanel);
+        mainPanel.add(Box.createRigidArea(new Dimension(0, 20)));
+
+        // Calculate button
+        JButton calculateButton = new JButton("Hitung Kalori");
+        calculateButton.setFont(new Font("Arial", Font.BOLD, 14));
+        calculateButton.setAlignmentX(Component.CENTER_ALIGNMENT);
+        calculateButton.addActionListener(e -> calculateCalories());
+        mainPanel.add(calculateButton);
+        mainPanel.add(Box.createRigidArea(new Dimension(0, 20)));
+
+        // Result label
+        resultLabel = new JLabel("Hasil akan ditampilkan di sini");
+        resultLabel.setFont(new Font("Arial", Font.BOLD, 16));
+        resultLabel.setForeground(Color.WHITE);
+        resultLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+        mainPanel.add(resultLabel);
+
+        add(mainPanel);
+        pack();
+        setSize(400, 500);
+        setLocationRelativeTo(null);
+    }
+
+    private JLabel createLabel(String text) {
+        JLabel label = new JLabel(text);
+        label.setFont(new Font("Arial", Font.BOLD, 14));
+        label.setForeground(Color.WHITE);
+        return label;
+    }
+
+    private JTextField createTextField() {
+        JTextField field = new JTextField();
+        field.setFont(new Font("Arial", Font.PLAIN, 14));
+        return field;
+    }
+
+    private void calculateCalories() {
+        try {
+            double weight = Double.parseDouble(weightField.getText());
+            double height = Double.parseDouble(heightField.getText());
+            int age = Integer.parseInt(ageField.getText());
+            String gender = (String) genderCombo.getSelectedItem();
+
+            double calories = calculator.calculateCalories(weight, height, age, gender);
+            resultLabel.setText(String.format("Kebutuhan Kalori Harian: %.2f kkal", calories));
+        } catch (NumberFormatException e) {
+            JOptionPane.showMessageDialog(this, "Mohon masukkan angka yang valid", "Error", JOptionPane.ERROR_MESSAGE);
+        } catch (Exception e) {
+            JOptionPane.showMessageDialog(this, "Error: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    public static void main(String[] args) {
+        SwingUtilities.invokeLater(() -> {
+            try {
+                UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+            new CalorieCalculatorGUI().setVisible(true);
+        });
+    }
+}
