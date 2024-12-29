@@ -1,0 +1,8 @@
+package comon;
+
+import java.rmi.Remote;
+import java.rmi.RemoteException;
+
+public interface CalorieCalculator extends Remote {
+    double calculateCalories(double weight, double height, int age, String gender) throws RemoteException;
+}
